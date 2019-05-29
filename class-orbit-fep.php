@@ -53,11 +53,30 @@ class ORBIT_FEP extends ORBIT_BASE{
       // FORM ATTRIBUTES THAT IS NEEDED BY THE REPEATER FILTERS
       $form_atts = $orbit_filter->vars();
       if( !$form_atts || !is_array( $form_atts ) ){ $form_atts = array(); }
-      $form_atts['tax_options'] = get_taxonomies();
-      $form_atts['postdate_options'] = array(
-        'year'	=>	'Year',
+      $form_atts['tax_types'] = get_taxonomies();
+
+
+      //ADD A NEW TYPE INTO THE TYPES ARRAY
+      $new_type = array(
+        'post' => 'Post',
+        'cf'   => 'Custom Fields'
       );
+      foreach( $new_type as $slug_type => $value_type ){
+        $form_atts['types'][$slug_type] = $value_type;
+      }
+      unset( $form_atts['types']['postdate'] );
+
+      //WHEN TYPE IS POST
+      $form_atts['post_types'] = array(
+        'title'     =>  'Title',
+        'content'   =>  'Description',
+        'date'      =>  'Date'
+      );
+
       $form_atts['db'] = array();
+      echo '<pre>';
+      print_r( $form_atts );
+      echo '</pre>';
       //$form_atts['db'] = $this->getFiltersFromDB( $post->ID );
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
