@@ -1,9 +1,8 @@
-jQuery(document).ready(function(){
+jQuery.fn.repeater_pages = function(){
 
-  jQuery('[data-behaviour="orbit-form-pages"]').each(function(){
-
+  return this.each(function() {
     var $el = jQuery( this );
-      // atts  = $el.data( 'atts' );
+      atts  = $el.data( 'atts' );
 
     var repeater = ORBIT_REPEATER( {
       $el				      : $el,
@@ -45,23 +44,34 @@ jQuery(document).ready(function(){
 				element	: 'textarea',
 				attr	: {
 					'data-behaviour': 'space-autoresize',
-					'placeholder'	: 'Type Page Title Here',
-					'name'			: 'pages[' + repeater.count + '][title]',
-					'value'			: 'Page ' + ( repeater.count + 1 )
+					'placeholder'	 : 'Type Page Title Here',
+					'name'			   : 'pages[' + repeater.count + '][title]',
+					'value'			   : 'Page ' + ( repeater.count + 1 )
 				},
 				append	: $header
 			});
 
 			if( page['title'] ){ $textarea.val( page['title'] ); }
 
+      var $fep_form_container = repeater.createField({
+				element	: 'div',
+				attr	: {
+					'data-behaviour' 	: 'orbit-fep-repeater',
+          'data-atts'       : JSON.stringify( atts )
+
+				},
+				append	: $content
+			});
+      $fep_form_container.repeater_fep();
+
       // CREATE HIDDEN FIELD THAT WILL HOLD THE PAGE RANK
 			var $hiddenRank = repeater.createField({
 				element	: 'input',
 				attr	: {
-					'type'				: 'hidden',
-					'value'				: page['rank'] ? page['rank'] : 0,
+					'type'				    : 'hidden',
+					'value'				    : page['rank'] ? page['rank'] : 0,
 					'data-behaviour' 	: 'orbit-page-rank',
-					'name'				: 'pages[' + repeater.count + '][rank]'
+					'name'				    : 'pages[' + repeater.count + '][rank]'
 				},
 				append	: $list_item
 			});
@@ -92,8 +102,17 @@ jQuery(document).ready(function(){
 
     } );//orbit-repeater
 
-
   });
+};
 
 
+jQuery(document).ready(function(){
+  jQuery('[data-behaviour="orbit-fep-pages"]').repeater_pages();
+  /*
+
+  jQuery( '[data-behaviour="orbit-fep-pages"] .button' ).click(function(){
+     jQuery('[data-behaviour="orbit-fep-repeater"]').repeater_fep().appendTo( jQuery('[data-behaviour="form-container"]') );
+    // alert( 'success' );
+  });
+  */
 });

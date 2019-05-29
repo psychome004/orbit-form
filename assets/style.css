@@ -9,7 +9,8 @@
   background-color: transparent;
 }
 
-#orbit-page-repeater-list .orbit-page-repeater{
+#orbit-page-repeater-list .orbit-page-repeater,
+#orbit-slide-repeater-list .orbit-slide-repeater{
   background: #fff;
   padding: 10px 10px 0 10px;
 }
@@ -18,13 +19,18 @@
   padding: 0;
 }
 
+#orbit-slide-repeater-list .orbit-slide-repeater{
+  border: 2px solid #eee;
+  margin-bottom: 20px;
+}
+
 #orbit-fep-pages .orbit-admin-dropdown{
   padding-bottom: 10px;
 }
 
-.orbit-page-repeater .list-content{
+.orbit-page-repeater .list-content,
+.orbit-slide-repeater .list-content{
   position: relative;
-}
-.orbit-page-repeater .list-header textarea{
-  height: 22px;
+  margin-top: 10px;
+  padding-bottom: 10px;
 }

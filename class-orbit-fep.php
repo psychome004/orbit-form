@@ -61,15 +61,15 @@ class ORBIT_FEP extends ORBIT_BASE{
       //$form_atts['db'] = $this->getFiltersFromDB( $post->ID );
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
-      _e( "<div data-behaviour='orbit-form-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");
+      _e( "<div data-behaviour='orbit-fep-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");// data-atts='".wp_json_encode( $form_atts )."'
+      _e( "<div data-behaviour='orbit-fep-repeater'></div>");
     }
   }
 
   function admin_assets(){
     wp_enqueue_style( 'orbit-form-style', plugin_dir_url( __FILE__ ).'assets/style.css',array(), time() );
-    wp_enqueue_script( 'orbit-page-repeater', plugin_dir_url( __FILE__ ).'assets/repeater.js', array('jquery'), time(), true );
-    // wp_enqueue_script( 'orbit-form-admin', plugin_dir_url( __FILE__ ).'assets/admin.js', array('jquery', 'orbit-repeater'), time(), true );
-      wp_enqueue_script( 'testing', plugin_dir_url( __FILE__ ).'assets/test.js', array('jquery', 'orbit-repeater'), time(), true );
+    wp_enqueue_script( 'orbit-fep-pages', plugin_dir_url( __FILE__ ).'assets/repeater-pages.js', array('jquery', 'orbit-repeater' ), time(), true );
+    wp_enqueue_script( 'orbit-fep-form-page', plugin_dir_url( __FILE__ ).'assets/repeater-fep.js', array('jquery', 'orbit-repeater' ), time(), true );
   }
 
 
