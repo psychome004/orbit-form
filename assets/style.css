@@ -1,9 +1,9 @@
-#form-pages .handlediv,
-#form-pages .hndle{
+#orbit-fep-pages .handlediv,
+#orbit-fep-pages .hndle{
   display: none;
 }
 
-#form-pages{
+#orbit-fep-pages{
   box-shadow: none;
   border: none;
   background-color: transparent;
@@ -14,11 +14,11 @@
   padding: 10px 10px 0 10px;
 }
 
-#form-pages .inside{
+#orbit-fep-pages .inside{
   padding: 0;
 }
 
-#form-pages .orbit-admin-dropdown{
+#orbit-fep-pages .orbit-admin-dropdown{
   padding-bottom: 10px;
 }
 
