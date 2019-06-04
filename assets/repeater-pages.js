@@ -13,12 +13,12 @@ jQuery.fn.repeater_pages = function(){
       init	: function( repeater ){
 
 			// ITERATE THROUGH EACH PAGES IN THE DB
-			// jQuery.each( $el, function( i, page ){
-      //
-			// 	if( page['title'] != undefined && page['ID'] != undefined ){
-			// 		repeater.addItem( page );
-			// 	}
-			// });
+			jQuery.each( atts['db'], function( i, page ){
+
+				if( page['page_title'] != undefined ){
+					repeater.addItem( page );
+				}
+			});
 		},
 		addItem	: function( repeater, $list_item, $closeButton, page ){
 
@@ -29,8 +29,8 @@ jQuery.fn.repeater_pages = function(){
 			* HIDDEN: page COUNT
 			*/
 
-			if( page == undefined || page['ID'] == undefined ){
-				page = { ID : 0 };
+			if( page == undefined || page['page_title'] == undefined ){
+				page = { page_title : '' };
 			}
 
 			// CREATE COLLAPSIBLE ITEM - HEADER AND CONTENT
@@ -45,24 +45,24 @@ jQuery.fn.repeater_pages = function(){
 				attr	: {
 					'data-behaviour': 'space-autoresize',
 					'placeholder'	 : 'Type Page Title Here',
-					'name'			   : 'pages[' + repeater.count + '][title]',
+					'name'			   : 'fep[' + repeater.count + '][page_title]',
 					'value'			   : 'Page ' + ( repeater.count + 1 )
 				},
 				append	: $header
 			});
 
-			if( page['title'] ){ $textarea.val( page['title'] ); }
+			if( page['page_title'] ){ $textarea.val( page['page_title'] ); }
 
       var $fep_form_container = repeater.createField({
 				element	: 'div',
 				attr	: {
-					'data-behaviour' 	: 'orbit-fep-repeater',
-          'data-atts'       : JSON.stringify( atts )
+					'data-behaviour' 	: 'orbit-fields-repeater',
+          'data-atts'       : JSON.stringify( page['fields'] ? page['fields'] : [] )
 
 				},
 				append	: $content
 			});
-      $fep_form_container.repeater_fep();
+      $fep_form_container.repeater_fields( 'fep[' + repeater.count + '][fields]', atts );
 
       // CREATE HIDDEN FIELD THAT WILL HOLD THE PAGE RANK
 			var $hiddenRank = repeater.createField({
@@ -71,7 +71,7 @@ jQuery.fn.repeater_pages = function(){
 					'type'				    : 'hidden',
 					'value'				    : page['rank'] ? page['rank'] : 0,
 					'data-behaviour' 	: 'orbit-page-rank',
-					'name'				    : 'pages[' + repeater.count + '][rank]'
+					'name'				    : 'fep[' + repeater.count + '][rank]'
 				},
 				append	: $list_item
 			});

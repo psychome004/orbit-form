@@ -12,6 +12,8 @@ class ORBIT_FEP extends ORBIT_BASE{
     add_action( 'orbit_meta_box_html', array( $this, 'metaboxHTML' ), 1, 2 );
 
     add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
+
+    add_action( 'save_post', array( $this, 'save_post' ) );
   }
 
 
@@ -55,6 +57,7 @@ class ORBIT_FEP extends ORBIT_BASE{
       if( !$form_atts || !is_array( $form_atts ) ){ $form_atts = array(); }
       $form_atts['tax_types'] = get_taxonomies();
 
+      $form_atts['db'] = $this->getDBData( $post->ID );
 
       //ADD A NEW TYPE INTO THE TYPES ARRAY
       $new_type = array(
@@ -73,22 +76,71 @@ class ORBIT_FEP extends ORBIT_BASE{
         'date'      =>  'Date'
       );
 
-      $form_atts['db'] = array();
+      //NEW FORM FIELDS
+      $new_field = array(
+        'radio'     =>  'Radio (multiple)',
+        'text'      =>  'Text',
+        'textarea'  =>  'Textarea'
+      );
+      foreach( $new_field as $slug_type => $value_type ){
+        $form_atts['forms'][$slug_type] = $value_type;
+      }
+
+      
+      //FOR TESTING PURPOSE
       echo '<pre>';
       print_r( $form_atts );
       echo '</pre>';
-      //$form_atts['db'] = $this->getFiltersFromDB( $post->ID );
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
       _e( "<div data-behaviour='orbit-fep-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");// data-atts='".wp_json_encode( $form_atts )."'
       _e( "<div data-behaviour='orbit-fep-repeater'></div>");
+      _e( "<div data-behaviour='orbit-fep-options-repeater'></div>");
     }
+  }
+
+  // copied
+
+  // GET THE FILTERS STORED AS ARRAY IN POST META
+  function getDBData( $post_id ){
+    $filtersFromDB = get_post_meta( $post_id, 'fep', true );
+    if( $filtersFromDB && is_array( $filtersFromDB ) ){
+      return $filtersFromDB;
+    }
+    return array();
+  }
+
+
+  /*
+  * TRIGGERED WHEN THE PUBLISH/UPDATE BUTTON IS CLICKED IN THE ADMIN PANEL
+  * THIS IS WHERE THE FILTERS THAT ARE ADDED BY THE USER FROM THE ADMIN PANEL IS SAVED IN THE DB
+  */
+  function save_post( $post_id ){
+    $post_type = get_post_type( $post_id );
+    if ( "orbit-fep" != $post_type ) return;
+
+    // SAVE FILTERS IN POST META
+    if( isset( $_POST['fep'] ) && is_array( $_POST['fep'] ) ){
+
+      // SORT ARRAY BY THE VALUE ORDER
+      $byOrder = array_column( $_POST['fep'], 'rank');
+      array_multisort( $byOrder, SORT_ASC, $_POST['fep'] );
+
+      echo '<pre>';
+      print_r( $_POST['fep'] );
+      echo '<pre>';
+
+      // SAVE
+      update_post_meta( $post_id, 'fep', $_POST['fep'] );
+    }
+    //wp_die();
   }
 
   function admin_assets(){
     wp_enqueue_style( 'orbit-form-style', plugin_dir_url( __FILE__ ).'assets/style.css',array(), time() );
     wp_enqueue_script( 'orbit-fep-pages', plugin_dir_url( __FILE__ ).'assets/repeater-pages.js', array('jquery', 'orbit-repeater' ), time(), true );
-    wp_enqueue_script( 'orbit-fep-form-page', plugin_dir_url( __FILE__ ).'assets/repeater-fep.js', array('jquery', 'orbit-repeater' ), time(), true );
+    wp_enqueue_script( 'orbit-fields', plugin_dir_url( __FILE__ ).'assets/repeater-fields.js', array('jquery', 'orbit-repeater' ), time(), true );
+    wp_enqueue_script( 'orbit-options-repeater', plugin_dir_url( __FILE__ ).'assets/repeater-options.js', array('jquery', 'orbit-repeater' ), time(), true );
   }
 
 

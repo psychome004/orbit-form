@@ -9,6 +9,21 @@
   background-color: transparent;
 }
 
+.orbit-slide-repeater .list-content .field-name> label{
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.orbit-slide-repeater .list-content{
+  padding-bottom: 30px;
+}
+.orbit-slide-repeater .list-content .field-name .name-attr{
+  width: 35%;
+}
+.orbit-slide-repeater .list-content .space-close-btn{
+  bottom: 22px;
+}
+
 #orbit-page-repeater-list .orbit-page-repeater,
 #orbit-slide-repeater-list .orbit-slide-repeater{
   background: #fff;
@@ -29,8 +44,47 @@
 }
 
 .orbit-page-repeater .list-content,
-.orbit-slide-repeater .list-content{
+.orbit-slide-repeater .list-content,
+.orbit-options-repeater .list-content{
   position: relative;
   margin-top: 10px;
   padding-bottom: 10px;
+}
+/* Options Repeater Section */
+.list-content [data-behaviour='orbit-fep-options-repeater']{
+  margin-top: 20px;
+}
+[data-behaviour='orbit-fep-options-repeater'] .button{
+  margin: 10px 0px;
+}
+
+[data-behaviour='orbit-fep-options-repeater'] .options-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.orbit-options-repeater .list-header{
+  margin: 0;
+}
+
+.orbit-options-repeater{
+  position: relative;
+  box-shadow: 1px 1px 2px 1px #eee;
+  margin-bottom: 14px;
+}
+
+.orbit-options-repeater .space-close-btn{
+  font-size: 20px;
+  text-decoration: none;
+  bottom: 16px !important;
+}
+.orbit-options-repeater textarea{
+  width: 100%;
+  resize: none;
+  border: none;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 0;
+  height: 44px;
 }
