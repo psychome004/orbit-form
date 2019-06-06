@@ -41,9 +41,9 @@ jQuery.fn.repeater_options = function( parent_name ){
 				element	: 'textarea',
 				attr	: {
 					'data-behaviour': 'space-autoresize',
-					'placeholder'	 : 'Type Options Title Here',
+					'placeholder'	 : 'Option',
 					'name'			   : common_name + '[value]',
-					'value'			   : 'Option ' + ( repeater.count + 1 )
+					
 				},
 				append	: $list_item
 			});

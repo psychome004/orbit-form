@@ -14,9 +14,10 @@ class ORBIT_FEP extends ORBIT_BASE{
     add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 
     add_action( 'save_post', array( $this, 'save_post' ) );
+
+    //SHORTCODE
+    add_shortcode( 'fep-form', array( $this, 'addForm' ) );
   }
-
-
 
   // Callback Functions
   function createPostType( $post_types ){
@@ -86,11 +87,11 @@ class ORBIT_FEP extends ORBIT_BASE{
         $form_atts['forms'][$slug_type] = $value_type;
       }
 
-      
+
       //FOR TESTING PURPOSE
-      echo '<pre>';
-      print_r( $form_atts );
-      echo '</pre>';
+      // echo '<pre>';
+      // print_r( $form_atts );
+      // echo '</pre>';
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
       _e( "<div data-behaviour='orbit-fep-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");// data-atts='".wp_json_encode( $form_atts )."'
@@ -136,6 +137,181 @@ class ORBIT_FEP extends ORBIT_BASE{
     //wp_die();
   }
 
+  function addForm( $atts ){
+    $atts = shortcode_atts( array(
+      'id'      =>  '0'
+    ), $atts, 'fep-form' );
+
+    $post_data = get_post_meta( $atts[id],'fep',true );
+
+    // echo '<pre>';
+    // print_r( $post_data );
+    // foreach( $post_data as $key=>$value ){
+    // ?>
+    <!-- //   <section class="meteor-slide"><?php //print_r( $value ); ?></section> -->
+    // <?php
+    // }
+    // echo '</pre>';
+
+    // Create Sections using post_data array
+
+    $labels = array(
+    'previous'  =>  'Previous',
+    'next'      =>  'Next',
+    'submit'    =>  'Submit'
+    );
+
+    $i = 0;
+    foreach ($post_data as $section) {
+      $this->display_section( $section, array(
+        'i'           => $i,
+        'totalSlides' => count( $post_data ),
+        'prev_text'		=>  $labels[ 'previous' ],
+        'next_text'		=>  $labels[ 'next' ],
+        'submit_text'	=>  $labels[ 'submit' ],
+      ) );
+      $i++;
+    }
+
+    // echo '<pre>';
+    // print_r( $section );
+    // echo '</pre>';
+
+  }
+
+
+  function display_section( $section, $args ){
+
+    $args = wp_parse_args( $args, array(
+      'prev_text'		=> "Previous",
+      'next_text'		=> "Next",
+      'submit_text'	=> "Submit",
+      'totalSlides'	=> 1,
+      'i'						=> 0
+
+    ) );
+    // echo '<pre>';
+    // print_r( $section );
+    // echo '</pre>';
+
+    echo "<section class='meteor-slide'>";
+    $this->display_inline_section( $section );
+
+
+    _e( "<ul class='meteor-list meteor-list-inline'>" );
+
+    // HIDE IN THE FIRST PAGE OF THE FORM
+    if( $args['i'] ){ _e( "<li><button data-behaviour='meteor-slide-prev'>" . $args['prev_text'] . "</button></li>" ); }
+
+    // IN THE LAST FORM, THE TEXT SHOULD CHANGE TO SUBMIT
+    if( $args['i'] != $args['totalSlides'] - 1 ){
+      _e( "<li><button data-behaviour='meteor-slide-next'>" . $args['next_text'] . "</button></li>" );
+    }
+    else{
+      _e( "<li><button type='submit'>" . $args['submit_text'] ."</button></li>" );
+    }
+
+    _e( "</ul>" );
+
+    echo "</section>";
+  }
+
+
+  function display_inline_section( $section ){
+    $section['class'] = isset( $section['class'] ) ? $section['class'] : "";
+    $section['class'] .= " inline-section";
+
+    echo "<div class='" . $section['class'] . "'>";
+    if( isset( $section['page_title'] ) ){
+      _e( "<h3>".$section['page_title']."</h3>" );
+    }
+
+    echo "<div class='section-fields'>";
+    foreach( $section['fields'] as $field ){
+      $this->display_field( $field );
+    }
+    echo "</div></div>";
+  }
+
+  function display_field( $field ){
+    // echo '<pre>';
+    // print_r( $field );
+    // echo '<pre>';
+    //
+    //
+
+    $options = array();
+
+    switch( $field['type'] ){
+      case 'nested-fields':
+        $this->display_inline_section( $field );
+        break;
+
+      case 'cf':
+        // ITERATE THE USER DEFINED OPTIONS INTO THE COMPATIBLE FORM OF OPTIONS
+        if( isset( $field['options'] ) && is_array( $field['options'] ) && count( $field['options'] ) ){
+          foreach( $field['options'] as $option ){
+            array_push( $options, array( 'slug' => $option, 'name' => $option['value'] ) );
+          }
+        }
+
+        // UPDATE TYPEVAL FOR CUSTOM FIELDS WITH THE POST META NAME
+        $field['typeval'] = $field['name'];
+
+        break;
+
+      case 'post':
+
+        switch( $field['typeval'] ){
+          case 'content':
+            $field['form'] = 'textarea';
+            break;
+
+          case 'date':
+            $field['form'] = 'date';
+            break;
+
+          default:
+            $field['form'] = 'text';
+
+        }
+
+        
+
+        break;
+
+      case 'tax':
+        // GET ALL THE TAXONOMY TERMS
+        $tax_terms = get_terms( array(
+          'taxonomy'    => $field['typeval'],
+          'hide_empty'  => false
+        ) );
+
+        // ITERATE AND ADD TO OPTIONS ARRAY
+        foreach( $tax_terms as $term ){
+          array_push( $options, array( 'slug' => $term->slug, 'name' => $term->name ) );
+        }
+        break;
+      default:
+
+    }
+
+    // NAME ATTRIBUTE FOR THE INPUT FIELD - this clearly identifies if the field is postfield, taxonomy or custom field
+    $field['name'] = $field['type'].'_'.$field['typeval'];
+
+    // SETTING FIELD CLASS
+    $field['class'] = isset( $field['class'] ) ? $field['class']." form-field" : "form-field";
+
+    echo "<div class='".$field['class']."'>";
+    echo "<label>".$field['label']."</label>";
+    include( "templates/" . $field['form'] . ".php" );
+    echo "</div>";
+
+  }
+
+
+
+
   function admin_assets(){
     wp_enqueue_style( 'orbit-form-style', plugin_dir_url( __FILE__ ).'assets/style.css',array(), time() );
     wp_enqueue_script( 'orbit-fep-pages', plugin_dir_url( __FILE__ ).'assets/repeater-pages.js', array('jquery', 'orbit-repeater' ), time(), true );
@@ -145,6 +321,6 @@ class ORBIT_FEP extends ORBIT_BASE{
 
 
 
-}//construct ends
+}//class ends
 
 ORBIT_FEP::getInstance();
