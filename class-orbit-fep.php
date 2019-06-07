@@ -39,6 +39,16 @@ class ORBIT_FEP extends ORBIT_BASE{
   function createMetaBox( $meta_box ){
     global $post_type;
 
+    //POST STATUS
+    $status = array();
+    $post_stats = get_post_statuses();
+
+    foreach( $post_stats as $present_status ){
+      // echo $status;
+      array_push( $status, $present_status  );
+    }
+
+
     if( 'orbit-fep' != $post_type ) return $meta_box;
 
     $meta_box['orbit-fep'] = array(
@@ -56,10 +66,10 @@ class ORBIT_FEP extends ORBIT_BASE{
             'text' 		=> 'Select Post Types',
             'options'	=> array()
           ),
-          'posts_status' => array(
+          'post_status' => array(
             'type' 		=> 'dropdown',
             'text' 		=> 'Select Post Status',
-            'options'	=> array( )
+            'options'	=> $post_stats
           ),
         )
       ),
@@ -94,9 +104,6 @@ class ORBIT_FEP extends ORBIT_BASE{
         'content'   =>  'Description',
         'date'      =>  'Date'
       );
-
-      //POST STATUS
-      $form_atts['post_status'] = get_post_statuses();
 
       //NEW FORM FIELDS
       $new_field = array(
@@ -162,8 +169,15 @@ class ORBIT_FEP extends ORBIT_BASE{
     //INSERTS THE POST INTO THE SELECTED POST TYPE
     $post_type = get_post_meta( $atts[id],'posttypes',true );
 
+
+    $post_status = get_post_meta( $atts[id],'post_status',true );
+
+    // echo '<pre>';
+    // print_r( $atts[id] );
+    // echo '</pre>';
+
     if( isset( $post_type ) ){
-      $this->insert_posts( $post_type );
+      $this->insertPost( $post_type, $post_status );
     }
     //echo "<pre>";
     //print_r( $post_type );
@@ -186,18 +200,14 @@ class ORBIT_FEP extends ORBIT_BASE{
     echo "</form>";
   }
 
-  function insert_posts( $post_type ){
+  function insertPost( $post_type, $post_status ){
 
     if( $_POST ){
 
-
-      // echo "<pre>";
-      // print_r( $_POST );
-      // echo "</pre>";
-
       // POST INFORMATION ARRAY
       $post_info = array(
-        'post_type' => $post_type
+        'post_type'   =>    $post_type,
+        'post_status' =>    $post_status
       );
 
       $post_fields_arr = array( 'post_title', 'post_content', 'post_date', 'post_status' );
@@ -208,24 +218,29 @@ class ORBIT_FEP extends ORBIT_BASE{
         }
       }
 
+      echo '<pre>';
+      print_r( $post_info );
+      echo '</pre>';
+
       $post_id = wp_insert_post( $post_info );
 
-      $custom_fields = array();
+      if( $post_id ){
 
+        foreach( $_POST as $slug => $value ){
+          if( strpos( $slug, 'tax_') !== false ){
 
-      foreach( $_POST as $slug => $value ){
-        if( strpos( $slug, 'tax_') !== false ){
+            $slug = str_replace( "tax_", "", $slug );
 
-          $slug = str_replace( "tax_", "", $slug );
+            // array_push( $taxonomies, $slug );
+            wp_set_post_terms( $post_id, $value, $slug );
+            // echo $slug;
+          }
+          elseif( strpos( $slug, 'cf_') !== false ){
+            $slug = str_replace( "cf_", "", $slug );
 
-          // array_push( $taxonomies, $slug );
-          wp_set_post_terms( $post_id, $value, $slug );
-          // echo $slug;
-        }
-        elseif( strpos( $slug, 'cf_') !== false ){
-          $slug = str_replace( "cf_", "", $slug );
+            update_post_meta( $post_id, $slug, $value );
+          }
 
-          update_post_meta( $post_id, $slug, $value );
         }
 
       }
