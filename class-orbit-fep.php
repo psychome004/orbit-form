@@ -13,6 +13,8 @@ class ORBIT_FEP extends ORBIT_BASE{
 
     add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 
+    add_action( 'wp_enqueue_scripts', array( $this, 'assets' ) );
+
     add_action( 'save_post', array( $this, 'save_post' ) );
 
     //SHORTCODE
@@ -44,6 +46,22 @@ class ORBIT_FEP extends ORBIT_BASE{
         'id'		=> 'orbit-fep-pages',
         'title'		=> 'Orbit Form Fields',
         'fields'	=> array()
+      ),
+      array(
+        'id'      =>  'orbit-fep-settings',
+        'title'   =>  'Orbit Fep Settings',
+        'fields'  =>  array(
+          'posttypes' => array(
+            'type' 		=> 'dropdown',
+            'text' 		=> 'Select Post Types',
+            'options'	=> array()
+          ),
+          'posts_status' => array(
+            'type' 		=> 'dropdown',
+            'text' 		=> 'Select Post Status',
+            'options'	=> array( )
+          ),
+        )
       ),
     );
     return $meta_box;
@@ -77,6 +95,9 @@ class ORBIT_FEP extends ORBIT_BASE{
         'date'      =>  'Date'
       );
 
+      //POST STATUS
+      $form_atts['post_status'] = get_post_statuses();
+
       //NEW FORM FIELDS
       $new_field = array(
         'radio'     =>  'Radio (multiple)',
@@ -87,11 +108,9 @@ class ORBIT_FEP extends ORBIT_BASE{
         $form_atts['forms'][$slug_type] = $value_type;
       }
 
-
-      //FOR TESTING PURPOSE
       // echo '<pre>';
       // print_r( $form_atts );
-      // echo '</pre>';
+      // echo '<pre>';
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
       _e( "<div data-behaviour='orbit-fep-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");// data-atts='".wp_json_encode( $form_atts )."'
@@ -127,10 +146,6 @@ class ORBIT_FEP extends ORBIT_BASE{
       $byOrder = array_column( $_POST['fep'], 'rank');
       array_multisort( $byOrder, SORT_ASC, $_POST['fep'] );
 
-      echo '<pre>';
-      print_r( $_POST['fep'] );
-      echo '<pre>';
-
       // SAVE
       update_post_meta( $post_id, 'fep', $_POST['fep'] );
     }
@@ -144,38 +159,78 @@ class ORBIT_FEP extends ORBIT_BASE{
 
     $post_data = get_post_meta( $atts[id],'fep',true );
 
-    // echo '<pre>';
-    // print_r( $post_data );
-    // foreach( $post_data as $key=>$value ){
-    // ?>
-    <!-- //   <section class="meteor-slide"><?php //print_r( $value ); ?></section> -->
-    // <?php
-    // }
-    // echo '</pre>';
+    //INSERTS THE POST INTO THE SELECTED POST TYPE
+    $post_type = get_post_meta( $atts[id],'posttypes',true );
+
+    if( isset( $post_type ) ){
+      $this->insert_posts( $post_type );
+    }
+    //echo "<pre>";
+    //print_r( $post_type );
+    //echo "</pre>";
+
+    echo "<form class='soah-fep'  method='post' enctype='multipart/form-data'>";
 
     // Create Sections using post_data array
 
-    $labels = array(
-    'previous'  =>  'Previous',
-    'next'      =>  'Next',
-    'submit'    =>  'Submit'
-    );
+    $orbit_multipart_form = ORBIT_MULTIPART_FORM::getInstance();
+    $orbit_multipart_form->create( count( $post_data ), function( $i, $post_data ){
 
-    $i = 0;
-    foreach ($post_data as $section) {
-      $this->display_section( $section, array(
-        'i'           => $i,
-        'totalSlides' => count( $post_data ),
-        'prev_text'		=>  $labels[ 'previous' ],
-        'next_text'		=>  $labels[ 'next' ],
-        'submit_text'	=>  $labels[ 'submit' ],
-      ) );
-      $i++;
-    }
+      $this->display_inline_section( $post_data[ $i ] );
+      //print_r( $post_data[ $i ] );
 
-    // echo '<pre>';
-    // print_r( $section );
-    // echo '</pre>';
+
+      //echo 'hello'.$i;
+    }, $post_data );
+
+    echo "</form>";
+  }
+
+  function insert_posts( $post_type ){
+
+    if( $_POST ){
+
+
+      // echo "<pre>";
+      // print_r( $_POST );
+      // echo "</pre>";
+
+      // POST INFORMATION ARRAY
+      $post_info = array(
+        'post_type' => $post_type
+      );
+
+      $post_fields_arr = array( 'post_title', 'post_content', 'post_date', 'post_status' );
+
+      foreach( $post_fields_arr as $post_field ){
+        if( isset( $_POST[ $post_field ] ) ){
+          $post_info[ $post_field ] = $_POST[ $post_field ];
+        }
+      }
+
+      $post_id = wp_insert_post( $post_info );
+
+      $custom_fields = array();
+
+
+      foreach( $_POST as $slug => $value ){
+        if( strpos( $slug, 'tax_') !== false ){
+
+          $slug = str_replace( "tax_", "", $slug );
+
+          // array_push( $taxonomies, $slug );
+          wp_set_post_terms( $post_id, $value, $slug );
+          // echo $slug;
+        }
+        elseif( strpos( $slug, 'cf_') !== false ){
+          $slug = str_replace( "cf_", "", $slug );
+
+          update_post_meta( $post_id, $slug, $value );
+        }
+
+      }
+
+    } //end of if statement
 
   }
 
@@ -190,9 +245,6 @@ class ORBIT_FEP extends ORBIT_BASE{
       'i'						=> 0
 
     ) );
-    // echo '<pre>';
-    // print_r( $section );
-    // echo '</pre>';
 
     echo "<section class='meteor-slide'>";
     $this->display_inline_section( $section );
@@ -234,11 +286,6 @@ class ORBIT_FEP extends ORBIT_BASE{
   }
 
   function display_field( $field ){
-    // echo '<pre>';
-    // print_r( $field );
-    // echo '<pre>';
-    //
-    //
 
     $options = array();
 
@@ -276,7 +323,7 @@ class ORBIT_FEP extends ORBIT_BASE{
 
         }
 
-        
+
 
         break;
 
@@ -289,7 +336,9 @@ class ORBIT_FEP extends ORBIT_BASE{
 
         // ITERATE AND ADD TO OPTIONS ARRAY
         foreach( $tax_terms as $term ){
-          array_push( $options, array( 'slug' => $term->slug, 'name' => $term->name ) );
+
+          // print_r( $term );
+          array_push( $options, array( 'slug' => $term->term_id, 'name' => $term->name, ) );
         }
         break;
       default:
@@ -310,7 +359,10 @@ class ORBIT_FEP extends ORBIT_BASE{
   }
 
 
-
+  function assets(){
+    $orbit_multipart_form = ORBIT_MULTIPART_FORM::getInstance();
+    $orbit_multipart_form->enqueue_assets();
+  }
 
   function admin_assets(){
     wp_enqueue_style( 'orbit-form-style', plugin_dir_url( __FILE__ ).'assets/style.css',array(), time() );

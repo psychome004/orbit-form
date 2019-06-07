@@ -82,7 +82,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           label   : 'Choose Type Field'
         });
 
-        console.log( filter );
+        // console.log( filter );
 
 
         //Filter form style
@@ -95,6 +95,17 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           append	: $content,
           label   : 'Choose Form Field'
         });
+
+        // //POST STATUS
+        // var $filter_status = repeater.createDropdownField({
+        //   attr    : {
+        //     'name'			: common_name + '[post_status]',
+        //   },
+        //   value   : filter['post_status'] ? filter['post_status'] : '',
+        //   options : atts['post_status'],
+        //   append	: $content,
+        //   label   : 'Choose Status'
+        // });
 
         // FIELD NAME - ONLY FOR CUSTOM FIELDS
         var $field_div = repeater.createField({
