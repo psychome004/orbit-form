@@ -18,7 +18,7 @@ class ORBIT_FEP extends ORBIT_BASE{
     add_action( 'save_post', array( $this, 'save_post' ) );
 
     //SHORTCODE
-    add_shortcode( 'fep-form', array( $this, 'addForm' ) );
+    add_shortcode( 'orbit_fep', array( $this, 'addForm' ) );
   }
 
   // Callback Functions
@@ -164,124 +164,61 @@ class ORBIT_FEP extends ORBIT_BASE{
       'id'      =>  '0'
     ), $atts, 'fep-form' );
 
-    $post_data = get_post_meta( $atts[id],'fep',true );
+    $post_data = get_post_meta( $atts['id'],'fep',true );
 
-    //INSERTS THE POST INTO THE SELECTED POST TYPE
-    $post_type = get_post_meta( $atts[id],'posttypes',true );
-
-
-    $post_status = get_post_meta( $atts[id],'post_status',true );
-
-    // echo '<pre>';
-    // print_r( $atts[id] );
-    // echo '</pre>';
-
-    if( isset( $post_type ) ){
-      $this->insertPost( $post_type, $post_status );
+    if( $_POST ){
+      // INSERT POST ONCE THE FORM HAS BEEN SUBMITTED
+      $new_post = array(
+        'post_type'   => get_post_meta( $atts['id'], 'posttypes', true ),
+        'post_status' => get_post_meta( $atts['id'], 'post_status', true )
+      );
+      $this->insertPost( $new_post );
     }
-    //echo "<pre>";
-    //print_r( $post_type );
-    //echo "</pre>";
 
     echo "<form class='soah-fep'  method='post' enctype='multipart/form-data'>";
 
-    // Create Sections using post_data array
-
+    // USING THE ORBIT MULTIPART FORM TO CREATE SLIDES
     $orbit_multipart_form = ORBIT_MULTIPART_FORM::getInstance();
     $orbit_multipart_form->create( count( $post_data ), function( $i, $post_data ){
 
       $this->display_inline_section( $post_data[ $i ] );
-      //print_r( $post_data[ $i ] );
 
-
-      //echo 'hello'.$i;
     }, $post_data );
 
     echo "</form>";
   }
 
-  function insertPost( $post_type, $post_status ){
+  function insertPost( $post_info ){
 
-    if( $_POST ){
+    // ADD POST RELATED INFORMATION TO AN ARRAY
+    $post_fields_arr = array( 'post_title', 'post_content', 'post_date', 'post_status' );
+    foreach( $post_fields_arr as $post_field ){
+      if( isset( $_POST[ $post_field ] ) ){
+        $post_info[ $post_field ] = $_POST[ $post_field ];
+      }
+    }
 
-      // POST INFORMATION ARRAY
-      $post_info = array(
-        'post_type'   =>    $post_type,
-        'post_status' =>    $post_status
-      );
+    $post_id = wp_insert_post( $post_info );
 
-      $post_fields_arr = array( 'post_title', 'post_content', 'post_date', 'post_status' );
-
-      foreach( $post_fields_arr as $post_field ){
-        if( isset( $_POST[ $post_field ] ) ){
-          $post_info[ $post_field ] = $_POST[ $post_field ];
+    if( $post_id ){
+      // ONLY IF POST ID IS VALID - ensures that the above insert was successfull
+      foreach( $_POST as $slug => $value ){
+        if( strpos( $slug, 'tax_') !== false ){
+          // ADDING TERMS TO THE NEW POST
+          $taxonomy = str_replace( "tax_", "", $slug );
+          wp_set_post_terms( $post_id, $value, $taxonomy );
+        }
+        elseif( strpos( $slug, 'cf_') !== false ){
+          // ADDING CUSTOM META VALUES TO THE POST
+          $meta_name = str_replace( "cf_", "", $slug );
+          update_post_meta( $post_id, $meta_name, $value );
         }
       }
-
-      echo '<pre>';
-      print_r( $post_info );
-      echo '</pre>';
-
-      $post_id = wp_insert_post( $post_info );
-
-      if( $post_id ){
-
-        foreach( $_POST as $slug => $value ){
-          if( strpos( $slug, 'tax_') !== false ){
-
-            $slug = str_replace( "tax_", "", $slug );
-
-            // array_push( $taxonomies, $slug );
-            wp_set_post_terms( $post_id, $value, $slug );
-            // echo $slug;
-          }
-          elseif( strpos( $slug, 'cf_') !== false ){
-            $slug = str_replace( "cf_", "", $slug );
-
-            update_post_meta( $post_id, $slug, $value );
-          }
-
-        }
-
-      }
-
-    } //end of if statement
+    }
 
   }
 
 
-  function display_section( $section, $args ){
-
-    $args = wp_parse_args( $args, array(
-      'prev_text'		=> "Previous",
-      'next_text'		=> "Next",
-      'submit_text'	=> "Submit",
-      'totalSlides'	=> 1,
-      'i'						=> 0
-
-    ) );
-
-    echo "<section class='meteor-slide'>";
-    $this->display_inline_section( $section );
-
-
-    _e( "<ul class='meteor-list meteor-list-inline'>" );
-
-    // HIDE IN THE FIRST PAGE OF THE FORM
-    if( $args['i'] ){ _e( "<li><button data-behaviour='meteor-slide-prev'>" . $args['prev_text'] . "</button></li>" ); }
-
-    // IN THE LAST FORM, THE TEXT SHOULD CHANGE TO SUBMIT
-    if( $args['i'] != $args['totalSlides'] - 1 ){
-      _e( "<li><button data-behaviour='meteor-slide-next'>" . $args['next_text'] . "</button></li>" );
-    }
-    else{
-      _e( "<li><button type='submit'>" . $args['submit_text'] ."</button></li>" );
-    }
-
-    _e( "</ul>" );
-
-    echo "</section>";
-  }
 
 
   function display_inline_section( $section ){
@@ -335,15 +272,11 @@ class ORBIT_FEP extends ORBIT_BASE{
 
           default:
             $field['form'] = 'text';
-
         }
-
-
-
         break;
 
       case 'tax':
-        // GET ALL THE TAXONOMY TERMS
+        // GET ALL THE TAXONOMY TERMS INCLUDING THE EMPTY ONES
         $tax_terms = get_terms( array(
           'taxonomy'    => $field['typeval'],
           'hide_empty'  => false
@@ -351,8 +284,6 @@ class ORBIT_FEP extends ORBIT_BASE{
 
         // ITERATE AND ADD TO OPTIONS ARRAY
         foreach( $tax_terms as $term ){
-
-          // print_r( $term );
           array_push( $options, array( 'slug' => $term->term_id, 'name' => $term->name, ) );
         }
         break;
@@ -360,16 +291,15 @@ class ORBIT_FEP extends ORBIT_BASE{
 
     }
 
-    // NAME ATTRIBUTE FOR THE INPUT FIELD - this clearly identifies if the field is postfield, taxonomy or custom field
-    $field['name'] = $field['type'].'_'.$field['typeval'];
+    // USING THE HELPER CLASS PROVIDED BY ORBIT BUNDLE
+    $orbit_form_field = new ORBIT_FORM_FIELD;
 
-    // SETTING FIELD CLASS
-    $field['class'] = isset( $field['class'] ) ? $field['class']." form-field" : "form-field";
-
-    echo "<div class='".$field['class']."'>";
-    echo "<label>".$field['label']."</label>";
-    include( "templates/" . $field['form'] . ".php" );
-    echo "</div>";
+    $orbit_form_field->display( array(
+      'name'  => $field['type'].'_'.$field['typeval'],  // NAME ATTRIBUTE FOR THE INPUT FIELD - this clearly identifies if the field is postfield, taxonomy or custom field
+      'type'  => $field['form'],
+      'label' => $field['label'],
+      'items' => $options
+    ) );
 
   }
 
