@@ -9,7 +9,7 @@ class ORBIT_FEP extends ORBIT_BASE{
     add_filter( 'orbit_meta_box_vars', array( $this, 'createMetaBox' ) );
 
     // SEPERATE METABOX FOR FILTERS ONLY
-    add_action( 'orbit_meta_box_html', array( $this, 'metaboxHTML' ), 1, 2 );
+    add_action( 'orbit_meta_box_html', array( $this, 'metaboxForFEP' ), 1, 2 );
 
     add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 
@@ -18,7 +18,7 @@ class ORBIT_FEP extends ORBIT_BASE{
     add_action( 'save_post', array( $this, 'save_post' ) );
 
     //SHORTCODE
-    add_shortcode( 'orbit_fep', array( $this, 'addForm' ) );
+    add_shortcode( 'orbit_fep', array( $this, 'shortcode' ) );
   }
 
   // Callback Functions
@@ -77,7 +77,7 @@ class ORBIT_FEP extends ORBIT_BASE{
     return $meta_box;
   }
 
-  function metaboxHTML( $post, $box ){
+  function metaboxForFEP( $post, $box ){
     if( isset( $box['id'] ) && 'orbit-fep-pages' == $box['id'] ){
       $orbit_filter = ORBIT_FILTER::getInstance();
 
@@ -121,18 +121,16 @@ class ORBIT_FEP extends ORBIT_BASE{
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
       _e( "<div data-behaviour='orbit-fep-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");// data-atts='".wp_json_encode( $form_atts )."'
-      _e( "<div data-behaviour='orbit-fep-repeater'></div>");
-      _e( "<div data-behaviour='orbit-fep-options-repeater'></div>");
+      //_e( "<div data-behaviour='orbit-fep-repeater'></div>");
+      //_e( "<div data-behaviour='orbit-fep-options-repeater'></div>");
     }
   }
 
-  // copied
-
-  // GET THE FILTERS STORED AS ARRAY IN POST META
+  // GET THE FEP FORMS DATA STORED AS ARRAY IN POST META
   function getDBData( $post_id ){
-    $filtersFromDB = get_post_meta( $post_id, 'fep', true );
-    if( $filtersFromDB && is_array( $filtersFromDB ) ){
-      return $filtersFromDB;
+    $data = get_post_meta( $post_id, 'fep', true );
+    if( $data && is_array( $data ) ){
+      return $data;
     }
     return array();
   }
@@ -159,39 +157,47 @@ class ORBIT_FEP extends ORBIT_BASE{
     //wp_die();
   }
 
-  function addForm( $atts ){
+  function shortcode( $atts ){
+
     $atts = shortcode_atts( array(
-      'id'      =>  '0'
+      'id'      =>  '0'     // POST ID
     ), $atts, 'fep-form' );
 
-    $post_data = get_post_meta( $atts['id'],'fep',true );
+    ob_start();
 
-    if( $_POST ){
-      // INSERT POST ONCE THE FORM HAS BEEN SUBMITTED
-      $new_post = array(
-        'post_type'   => get_post_meta( $atts['id'], 'posttypes', true ),
-        'post_status' => get_post_meta( $atts['id'], 'post_status', true )
-      );
-      $this->insertPost( $new_post );
-    }
+    // GET FORM PAGES INFORMATION FROM THE METADATA IN ORBIT-FEP
+    $fep_pages = $this->getDBData( $atts['id'] );
 
-    echo "<form class='soah-fep'  method='post' enctype='multipart/form-data'>";
+    $new_post = array(
+      'post_type'   => get_post_meta( $atts['id'], 'posttypes', true ),
+      'post_status' => get_post_meta( $atts['id'], 'post_status', true )
+    );
+
+    $this->create( $fep_pages, $new_post );
+
+    return ob_get_clean();
+  }
+
+  function create( $pages, $new_post = array() ){
+
+    // INSERT POST ONCE THE FORM HAS BEEN SUBMITTED
+    if( $_POST ){ $this->insertPost( $new_post ); }
+
+    // STARTING OF FORM TAG
+    echo "<form class='soah-fep' method='post' enctype='multipart/form-data'>";
 
     // USING THE ORBIT MULTIPART FORM TO CREATE SLIDES
     $orbit_multipart_form = ORBIT_MULTIPART_FORM::getInstance();
-    $orbit_multipart_form->create( count( $post_data ), function( $i, $post_data ){
+    $orbit_multipart_form->create( $pages );
 
-      $this->display_inline_section( $post_data[ $i ] );
-
-    }, $post_data );
-
+    // END OF FORM TAG
     echo "</form>";
   }
 
   function insertPost( $post_info ){
 
     // ADD POST RELATED INFORMATION TO AN ARRAY
-    $post_fields_arr = array( 'post_title', 'post_content', 'post_date', 'post_status' );
+    $post_fields_arr = array( 'post_title', 'post_content', 'post_date' );
     foreach( $post_fields_arr as $post_field ){
       if( isset( $_POST[ $post_field ] ) ){
         $post_info[ $post_field ] = $_POST[ $post_field ];
@@ -214,95 +220,9 @@ class ORBIT_FEP extends ORBIT_BASE{
           update_post_meta( $post_id, $meta_name, $value );
         }
       }
-    }
+    } // IF $POST_ID
 
-  }
-
-
-
-
-  function display_inline_section( $section ){
-    $section['class'] = isset( $section['class'] ) ? $section['class'] : "";
-    $section['class'] .= " inline-section";
-
-    echo "<div class='" . $section['class'] . "'>";
-    if( isset( $section['page_title'] ) ){
-      _e( "<h3>".$section['page_title']."</h3>" );
-    }
-
-    echo "<div class='section-fields'>";
-    foreach( $section['fields'] as $field ){
-      $this->display_field( $field );
-    }
-    echo "</div></div>";
-  }
-
-  function display_field( $field ){
-
-    $options = array();
-
-    switch( $field['type'] ){
-      case 'nested-fields':
-        $this->display_inline_section( $field );
-        break;
-
-      case 'cf':
-        // ITERATE THE USER DEFINED OPTIONS INTO THE COMPATIBLE FORM OF OPTIONS
-        if( isset( $field['options'] ) && is_array( $field['options'] ) && count( $field['options'] ) ){
-          foreach( $field['options'] as $option ){
-            array_push( $options, array( 'slug' => $option, 'name' => $option['value'] ) );
-          }
-        }
-
-        // UPDATE TYPEVAL FOR CUSTOM FIELDS WITH THE POST META NAME
-        $field['typeval'] = $field['name'];
-
-        break;
-
-      case 'post':
-
-        switch( $field['typeval'] ){
-          case 'content':
-            $field['form'] = 'textarea';
-            break;
-
-          case 'date':
-            $field['form'] = 'date';
-            break;
-
-          default:
-            $field['form'] = 'text';
-        }
-        break;
-
-      case 'tax':
-        // GET ALL THE TAXONOMY TERMS INCLUDING THE EMPTY ONES
-        $tax_terms = get_terms( array(
-          'taxonomy'    => $field['typeval'],
-          'hide_empty'  => false
-        ) );
-
-        // ITERATE AND ADD TO OPTIONS ARRAY
-        foreach( $tax_terms as $term ){
-          array_push( $options, array( 'slug' => $term->term_id, 'name' => $term->name, ) );
-        }
-        break;
-      default:
-
-    }
-
-    // USING THE HELPER CLASS PROVIDED BY ORBIT BUNDLE
-    $orbit_form_field = new ORBIT_FORM_FIELD;
-
-    $orbit_form_field->display( array(
-      'name'  => $field['type'].'_'.$field['typeval'],  // NAME ATTRIBUTE FOR THE INPUT FIELD - this clearly identifies if the field is postfield, taxonomy or custom field
-      'type'  => $field['form'],
-      'label' => $field['label'],
-      'items' => $options
-    ) );
-
-  }
-
+  } // END OF FUNCTION
 
   function assets(){
     $orbit_multipart_form = ORBIT_MULTIPART_FORM::getInstance();
@@ -315,8 +235,6 @@ class ORBIT_FEP extends ORBIT_BASE{
     wp_enqueue_script( 'orbit-fields', plugin_dir_url( __FILE__ ).'assets/repeater-fields.js', array('jquery', 'orbit-repeater' ), time(), true );
     wp_enqueue_script( 'orbit-options-repeater', plugin_dir_url( __FILE__ ).'assets/repeater-options.js', array('jquery', 'orbit-repeater' ), time(), true );
   }
-
-
 
 }//class ends
 
