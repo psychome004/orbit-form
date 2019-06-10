@@ -23,7 +23,7 @@ class ORBIT_FEP extends ORBIT_BASE{
           'singular_name' => 'Orbit Fep',
         ),
         'public'		=> true,
-        'supports'	=> array( 'title', 'editor' )
+        'supports'	=> array( 'title' )
       );
       return $post_types;
     } );
@@ -62,10 +62,18 @@ class ORBIT_FEP extends ORBIT_BASE{
           $districts = array();
           foreach ( $locations as $location ) {
             if( $location->parent ){
-              array_push( $districts, array( 'slug' => $location->term_id, 'name' => $location->name, 'parent' => $location->parent ) );
+              array_push( $districts, array(
+                'slug'    => $location->term_id,
+                'name'    => $location->name,
+                'parent'  => $location->parent
+              ) );
             }
             else{
-              array_push( $states, array( 'slug' => $location->term_id, 'name' => $location->name, 'parent' => $location->parent ) );
+              array_push( $states, array(
+                'slug'    => $location->term_id,
+                'name'    => $location->name,
+                'parent'  => $location->parent 
+              ) );
             }
           }
 
