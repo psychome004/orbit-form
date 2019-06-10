@@ -151,7 +151,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         var $html = repeater.createRichText({
           attr:{
             name  : common_name + '[html]',
-            id    : 'sections_html_' + repeater.count
+            id    : 'sections_html_' + Math.floor((Math.random() * 10) + 1) + '_' + repeater.count
           },
           html   : filter['html'] ? filter['html'] : '',
           append : $content

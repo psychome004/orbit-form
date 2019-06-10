@@ -198,6 +198,16 @@ class ORBIT_FEP extends ORBIT_BASE{
     return array();
   }
 
+  function sortFields( $section ){
+    $fields = array();
+    foreach( $section['fields'] as $field ){
+      if( isset( $field['fields'] ) ){
+        $field['fields'] = $this->sortFields( $field );
+      }
+      array_push( $fields, $field );
+    }
+    return $fields;
+  }
 
   /*
   * TRIGGERED WHEN THE PUBLISH/UPDATE BUTTON IS CLICKED IN THE ADMIN PANEL
@@ -211,11 +221,29 @@ class ORBIT_FEP extends ORBIT_BASE{
     if( isset( $_POST['fep'] ) && is_array( $_POST['fep'] ) ){
 
       // SORT ARRAY BY THE VALUE ORDER
-      $byOrder = array_column( $_POST['fep'], 'rank');
-      array_multisort( $byOrder, SORT_ASC, $_POST['fep'] );
+      //$byOrder = array_column( $_POST['fep'], 'order' );
+      //array_multisort( $byOrder, SORT_ASC, $_POST['fep'] );
+
+      //echo "<pre>";
+      //print_r( $fep );
+      //echo "</pre>";
+
+      $fep = array();
+
+      foreach( $_POST['fep'] as $page ){
+        if( isset( $page['fields'] ) ){
+          $page['fields'] = $this->sortFields( $page );
+        }
+        array_push( $fep, $page );
+      }
+
+      //echo "<pre>";
+      //print_r( $fep );
+      //echo "</pre>";
+
 
       // SAVE
-      update_post_meta( $post_id, 'fep', $_POST['fep'] );
+      update_post_meta( $post_id, 'fep', $fep );
     }
     //wp_die();
   }
