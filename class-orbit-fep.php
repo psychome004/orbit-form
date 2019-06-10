@@ -4,7 +4,7 @@
 class ORBIT_FEP extends ORBIT_BASE{
 
   function __construct(){
-    
+
     add_filter( 'orbit_post_type_vars', array( $this, 'createPostType' ) );
 
     add_filter( 'orbit_meta_box_vars', array( $this, 'createMetaBox' ) );
@@ -259,24 +259,25 @@ class ORBIT_FEP extends ORBIT_BASE{
 
     $post_id = wp_insert_post( $post_info );
 
-    if( $post_id ){
+    // IF POST ID IS NOT VALID THEN RETURN ERROR
+    if( !$post_id || is_array( $post_id ) ){ print_r( $post_id );return 0; }
 
-      do_action( 'orbit-fep-after-save' );
+    do_action( 'orbit-fep-after-save' );
 
-      // ONLY IF POST ID IS VALID - ensures that the above insert was successfull
-      foreach( $_POST as $slug => $value ){
-        if( strpos( $slug, 'tax_') !== false ){
-          // ADDING TERMS TO THE NEW POST
-          $taxonomy = str_replace( "tax_", "", $slug );
-          wp_set_post_terms( $post_id, $value, $taxonomy );
-        }
-        elseif( strpos( $slug, 'cf_') !== false ){
-          // ADDING CUSTOM META VALUES TO THE POST
-          $meta_name = str_replace( "cf_", "", $slug );
-          update_post_meta( $post_id, $meta_name, $value );
-        }
+    // ONLY IF POST ID IS VALID - ensures that the above insert was successfull
+    foreach( $_POST as $slug => $value ){
+      if( strpos( $slug, 'tax_') !== false ){
+        // ADDING TERMS TO THE NEW POST
+        $taxonomy = str_replace( "tax_", "", $slug );
+        wp_set_post_terms( $post_id, $value, $taxonomy );
       }
-    } // IF $POST_ID
+      elseif( strpos( $slug, 'cf_') !== false ){
+        // ADDING CUSTOM META VALUES TO THE POST
+        $meta_name = str_replace( "cf_", "", $slug );
+        update_post_meta( $post_id, $meta_name, $value );
+      }
+    }
+
 
   } // END OF FUNCTION
 
