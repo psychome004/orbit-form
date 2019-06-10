@@ -4,6 +4,7 @@
 class ORBIT_FEP extends ORBIT_BASE{
 
   function __construct(){
+    
     add_filter( 'orbit_post_type_vars', array( $this, 'createPostType' ) );
 
     add_filter( 'orbit_meta_box_vars', array( $this, 'createMetaBox' ) );
@@ -19,6 +20,58 @@ class ORBIT_FEP extends ORBIT_BASE{
 
     //SHORTCODE
     add_shortcode( 'orbit_fep', array( $this, 'shortcode' ) );
+
+
+    // SAMPLE EXAMPLE OF OVERRIDING FIELD WITHIN THE MULTIPART
+    add_filter( 'orbit-mf-field', function( $custom_function, $field ){
+
+      if( isset( $field['type'] ) && $field['type'] == 'tax' &&
+        isset( $field['typeval'] ) && $field['typeval'] == 'locations' &&
+        isset( $field['form'] ) && $field['form'] == 'dropdown' ){
+
+        $custom_function = function( $field ){
+
+          $locations = get_terms( array(
+            'taxonomy'    => $field['typeval'],
+            'hide_empty'  => false
+          ) );
+
+
+          $states = array();
+          $districts = array();
+          foreach ( $locations as $location ) {
+            if( $location->parent ){
+              array_push( $districts, array( 'slug' => $location->term_id, 'name' => $location->name, 'parent' => $location->parent ) );
+            }
+            else{
+              array_push( $states, array( 'slug' => $location->term_id, 'name' => $location->name, 'parent' => $location->parent ) );
+            }
+          }
+
+          // USING THE HELPER CLASS PROVIDED BY ORBIT BUNDLE
+          $orbit_form_field = new ORBIT_FORM_FIELD;
+
+          $orbit_form_field->display( array(
+            'name'  => 'state',
+            'type'  => $field['form'],
+            'label' => 'Select State',
+            'items' => $states
+          ) );
+
+          $orbit_form_field->display( array(
+            'name'  => 'district',
+            'type'  => $field['form'],
+            'label' => 'Select District',
+            'items' => $districts
+          ) );
+
+
+        };
+
+      }
+
+      return $custom_function;
+    }, 10, 2 );
   }
 
   // Callback Functions
@@ -207,6 +260,9 @@ class ORBIT_FEP extends ORBIT_BASE{
     $post_id = wp_insert_post( $post_info );
 
     if( $post_id ){
+
+      do_action( 'orbit-fep-after-save' );
+
       // ONLY IF POST ID IS VALID - ensures that the above insert was successfull
       foreach( $_POST as $slug => $value ){
         if( strpos( $slug, 'tax_') !== false ){
