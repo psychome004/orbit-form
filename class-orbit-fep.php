@@ -5,7 +5,28 @@ class ORBIT_FEP extends ORBIT_BASE{
 
   function __construct(){
 
-    add_filter( 'orbit_post_type_vars', array( $this, 'createPostType' ) );
+    // ADD TO THE ORBIT MENU IN THE BACKEND
+    add_filter( 'orbit_admin_menus', function( $menus ){
+      $menus[ 'orbit-fep' ] = array(
+        'label'	=> 'Orbit FEP',
+        'url'		=> 'edit.php?post_type=orbit-fep'
+      );
+      return $menus;
+    } );
+
+    // CREATE CUSTOM POST TYPE WHERE THE FORM FIELDS CAN BE ADDED
+    add_filter( 'orbit_post_type_vars', function( $post_types ){
+      $post_types['orbit-fep'] = array(
+        'slug' 		=> 'orbit-fep',
+        'labels'	=> array(
+          'name' 					=> 'Orbit Fep',
+          'singular_name' => 'Orbit Fep',
+        ),
+        'public'		=> true,
+        'supports'	=> array( 'title', 'editor' )
+      );
+      return $post_types;
+    } );
 
     add_filter( 'orbit_meta_box_vars', array( $this, 'createMetaBox' ) );
 
@@ -74,35 +95,20 @@ class ORBIT_FEP extends ORBIT_BASE{
     }, 10, 2 );
   }
 
-  // Callback Functions
-  function createPostType( $post_types ){
-    $post_types['orbit-fep'] = array(
-      'slug' 		=> 'orbit-fep',
-      'labels'	=> array(
-        'name' 					=> 'Orbit Fep',
-        'singular_name' => 'Orbit Fep',
-      ),
-      // 'rewrite'		=> array('slug' => 'incidents', 'with_front' => false ),
-      'public'		=> true,
-      'supports'	=> array( 'title', 'editor' )
-    );
-    return $post_types;
-  }
-
+  /*
+  * METABOX TO CREATE
+  * FORM FIELDS IN MULTIPART FORM
+  * SETTINGS: POST TYPE AND STATUS
+  */
   function createMetaBox( $meta_box ){
     global $post_type;
 
-    //POST STATUS
-    $status = array();
-    $post_stats = get_post_statuses();
-
-    foreach( $post_stats as $present_status ){
-      // echo $status;
-      array_push( $status, $present_status  );
-    }
-
-
     if( 'orbit-fep' != $post_type ) return $meta_box;
+
+    // POST STATUS
+    $list_of_post_status = array();
+    $post_statuses = get_post_statuses();
+    foreach( $post_statuses as $post_status ){ array_push( $list_of_post_status, $post_status  ); }
 
     $meta_box['orbit-fep'] = array(
       array(
@@ -112,7 +118,7 @@ class ORBIT_FEP extends ORBIT_BASE{
       ),
       array(
         'id'      =>  'orbit-fep-settings',
-        'title'   =>  'Orbit Fep Settings',
+        'title'   =>  'Settings',
         'fields'  =>  array(
           'posttypes' => array(
             'type' 		=> 'dropdown',
@@ -122,7 +128,7 @@ class ORBIT_FEP extends ORBIT_BASE{
           'post_status' => array(
             'type' 		=> 'dropdown',
             'text' 		=> 'Select Post Status',
-            'options'	=> $post_stats
+            'options'	=> $list_of_post_status
           ),
         )
       ),
@@ -146,9 +152,7 @@ class ORBIT_FEP extends ORBIT_BASE{
         'post' => 'Post',
         'cf'   => 'Custom Fields'
       );
-      foreach( $new_type as $slug_type => $value_type ){
-        $form_atts['types'][$slug_type] = $value_type;
-      }
+      foreach( $new_type as $slug_type => $value_type ){ $form_atts['types'][$slug_type] = $value_type; }
       unset( $form_atts['types']['postdate'] );
 
       //WHEN TYPE IS POST
@@ -168,14 +172,9 @@ class ORBIT_FEP extends ORBIT_BASE{
         $form_atts['forms'][$slug_type] = $value_type;
       }
 
-      // echo '<pre>';
-      // print_r( $form_atts );
-      // echo '<pre>';
-
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
       _e( "<div data-behaviour='orbit-fep-pages' data-atts='".wp_json_encode( $form_atts )."'></div>");// data-atts='".wp_json_encode( $form_atts )."'
-      //_e( "<div data-behaviour='orbit-fep-repeater'></div>");
-      //_e( "<div data-behaviour='orbit-fep-options-repeater'></div>");
+
     }
   }
 
@@ -262,6 +261,7 @@ class ORBIT_FEP extends ORBIT_BASE{
     // IF POST ID IS NOT VALID THEN RETURN ERROR
     if( !$post_id || is_array( $post_id ) ){ print_r( $post_id );return 0; }
 
+    // INCASE THERE ARE OVERRIDING FIELDS
     do_action( 'orbit-fep-after-save' );
 
     // ONLY IF POST ID IS VALID - ensures that the above insert was successfull
