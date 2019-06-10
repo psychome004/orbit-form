@@ -72,7 +72,7 @@ class ORBIT_FEP extends ORBIT_BASE{
               array_push( $states, array(
                 'slug'    => $location->term_id,
                 'name'    => $location->name,
-                'parent'  => $location->parent 
+                'parent'  => $location->parent
               ) );
             }
           }
@@ -167,7 +167,8 @@ class ORBIT_FEP extends ORBIT_BASE{
       $form_atts['post_types'] = array(
         'title'     =>  'Title',
         'content'   =>  'Description',
-        'date'      =>  'Date'
+        'date'      =>  'Date',
+        'files'     =>  'Attachments'
       );
 
       //NEW FORM FIELDS
@@ -254,7 +255,47 @@ class ORBIT_FEP extends ORBIT_BASE{
     echo "</form>";
   }
 
+  function validateFiles(){
+    foreach( $_FILES as $key => $fileobject ){
+      if( isset( $fileobject['name'] ) && is_array( $fileobject['name'] ) && count( $fileobject['name'] ) ){
+        $total_files = count( $fileobject['name'] );
+        for( $i=0; $i<$total_files; $i++ ){
+          $temp_file = array();
+
+          //$fields = array( 'name', 'type', 'tmp_name', 'error', 'size' );
+
+          $fields = array_keys( $fileobject );
+          foreach( $fields as $field ){
+            if( isset( $fileobject[ $field ] ) && is_array( $fileobject[ $field ] ) && isset( $fileobject[ $field ][ $i ] ) ){
+              $temp_file[ $field ] = $fileobject[ $field ][ $i ];
+            }
+          }
+          $_FILES[ $key."_".$i ] = $temp_file;
+        }
+        unset( $_FILES[ $key ] );
+      }
+    }
+  }
+
+  function handleMediaUpload( $post_id, $data = array() ){
+		if( is_array( $data ) ){
+      require_once( ABSPATH . 'wp-admin/includes/image.php' );
+      require_once( ABSPATH . 'wp-admin/includes/file.php' );
+      require_once( ABSPATH . 'wp-admin/includes/media.php' );
+
+      foreach( $data as $key => $value ){
+        $attachment_id = media_handle_upload( $key, $post_id, array( 'test_form'=> false ) );
+        if( is_wp_error( $attachment_id ) ){
+          print_r( $attachment_id );
+        }
+      }
+    }
+	}
+
   function insertPost( $post_info ){
+
+
+
 
     // ADD POST RELATED INFORMATION TO AN ARRAY
     $post_fields_arr = array( 'post_title', 'post_content', 'post_date' );
@@ -286,6 +327,10 @@ class ORBIT_FEP extends ORBIT_BASE{
       }
     }
 
+    if( $_FILES ){
+      $this->validateFiles();
+      $this->handleMediaUpload( $post_id, $_FILES );
+    }
 
   } // END OF FUNCTION
 
