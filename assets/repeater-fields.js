@@ -34,9 +34,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 				* HIDDEN: page COUNT
 				*/
 
-        // console.log(filter);
-
-				if( filter == undefined ){
+        if( filter == undefined ){
 					filter = { label : '' };
 				}
 
@@ -72,6 +70,18 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         });
         if( filter['type'] != undefined ){ $filter_type.selectOption( filter['type'] ); }
 
+        // REQUIRED FIELD
+        var required_flag = false;
+				if( filter && filter['required'] && filter['required'] > 0 ){ required_flag = true; }
+        var $required = repeater.createBooleanField({
+          attr   :  {
+            name		: common_name + '[required]',
+            checked : required_flag
+          },
+          label  :  'Required',
+          append :  $content
+        });
+
         // FILTER TYPEVAL
         var $filter_typeval = repeater.createDropdownField({
           attr	: {
@@ -81,9 +91,6 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           append	: $content,
           label   : 'Choose Type Field'
         });
-
-        // console.log( filter );
-
 
         //Filter form style
         var $form_field = repeater.createDropdownField({
@@ -96,44 +103,18 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           label   : 'Choose Form Field'
         });
 
-        // //POST STATUS
-        // var $filter_status = repeater.createDropdownField({
-        //   attr    : {
-        //     'name'			: common_name + '[post_status]',
-        //   },
-        //   value   : filter['post_status'] ? filter['post_status'] : '',
-        //   options : atts['post_status'],
-        //   append	: $content,
-        //   label   : 'Choose Status'
-        // });
-
         // FIELD NAME - ONLY FOR CUSTOM FIELDS
-        var $field_div = repeater.createField({
-          element	: 'div',
-          attr	  : {
-            class: 'field-name'
+        var $meta_name = repeater.createInputTextField({
+          label : 'Metafield Name',
+          attr  : {
+            placeholder : "Type name of the metafield",
+            name        : common_name + '[name]'
           },
-          append	: $content
+          help    : 'Only enter slugs as field names. For example: <b>contact-name</b>',
+          append  : $content
         });
+        if( filter['name'] != undefined ){ $meta_name.val( filter['name'] ); }
 
-        var $field_label = repeater.createField({
-          element	: 'label',
-          attr	  : {},
-          html    : 'Field Name',
-          append	: $field_div
-        });
-
-        var $field_name = repeater.createField({
-          element	: 'input',
-          attr	: {
-            'type'        : 'text',
-            'placeholder'	: 'Type Name of the Field',
-            'class'       :  'name-attr',
-            'name'        : common_name + '[name]'
-          },
-          append	: $field_div
-        });
-        if( filter['name'] != undefined ){ $field_name.val( filter['name'] ); }
 
         // Container for holding the custom field's checkboxes
         var $fep_options = repeater.createField({
@@ -141,7 +122,6 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           attr	: {
             'data-behaviour' 	: 'orbit-fep-options-repeater',
             'data-atts'       : JSON.stringify( filter['options'] ? filter['options'] : [] )
-
           },
           append	: $content
         });
@@ -176,32 +156,26 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         }
 
         // SHOW OR HIDE OPTIONS FOR CUSTOM FIELDS ONLY WHEN THE MULTIPE FORM FIELDS ARE SELECTED
-        function showOrHideOptions(){
+        function showOrHideFields(){
           var type              = $filter_type.find('select').val(),
             multiple_formfields = ['checkbox', 'dropdown', 'bt_dropdown_checkboxes', 'radio'],
             formfield           = $form_field.find('select').val();
 
+          // SHOW OR HIDE OPTIONS
           if( ( jQuery.inArray( formfield, multiple_formfields ) != -1 ) && ( type == 'cf' ) ){ $fep_options.show(); }
           else{ $fep_options.hide(); }
 
+          // SHOW OR HIDE META NAME FIELD
+          if( type=='cf' ){ $meta_name.show(); }
+          else{ $meta_name.hide(); }
         }
 
-        function showOrHideNameField(){
-          var type = $filter_type.find('select').val();
-          if( type=='cf' ){ $field_div.show(); }
-          else{ $field_div.hide(); }
-        }
+        // CHECK WHENEVER THE FORM IS CHANGED
+        $list_item.on( 'change', function(){ showOrHideFields(); });
+        showOrHideFields();
 
-        $list_item.on( 'change', function(){
-          showOrHideOptions();
-          showOrHideNameField();
-        });
-        $filter_type.on( 'change', function(){
-          updateOptionsForFilterTypeValue();
-        });
-        showOrHideOptions();
-        showOrHideNameField();
-
+        // UPDATE ONLY WHEN THE TYPE IS CHANGED
+        $filter_type.on( 'change', function(){ updateOptionsForFilterTypeValue(); });
         updateOptionsForFilterTypeValue();
         // DEFAULT VALUE COMING FROM THE DB
         if( filter['typeval'] ){ $filter_typeval.selectOption( filter['typeval'] ); }
@@ -219,9 +193,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           append	: $list_item
         });
 
-
-
-				$closeButton.click( function( ev ){
+        $closeButton.click( function( ev ){
 					ev.preventDefault();
 					if( confirm( 'Are you sure you want to remove this?' ) ){
 						// IF PAGE ID IS NOT EMPTY THAT MEANS IT IS ALREADY IN THE DB, SO THE ID HAS TO BE PUSHED INTO THE HIDDEN DELETED FIELD
@@ -229,8 +201,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 					}
 				});
 
-
-			},
+      },
 			reorder: function( repeater ){
 				/*
 				* REORDER LIST

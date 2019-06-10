@@ -9,11 +9,16 @@
   background-color: transparent;
 }
 
-.orbit-slide-repeater .list-content .field-name> label{
+.orbit-slide-repeater .list-content label{
   display: block;
   font-weight: 600;
   margin-bottom: 6px;
 }
+
+.orbit-slide-repeater .list-content p.help{
+  margin-top: 2px;
+}
+
 .orbit-slide-repeater .list-content{
   padding-bottom: 30px;
 }
