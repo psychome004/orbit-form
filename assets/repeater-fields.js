@@ -60,7 +60,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 				//$textarea.space_autoresize();
 				if( filter['label'] ){ $textarea.val( filter['label'] ); }
 
-        var $filter_type = repeater.createDropdownField({
+        var $type = repeater.createDropdownField({
           attr	:  {
           'name'			: common_name + '[type]'
           },
@@ -68,7 +68,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           append	: $content,
           label	  : 'Choose Type'
         });
-        if( filter['type'] != undefined ){ $filter_type.selectOption( filter['type'] ); }
+        if( filter['type'] != undefined ){ $type.selectOption( filter['type'] ); }
 
         // REQUIRED FIELD
         var required_flag = false;
@@ -83,7 +83,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         });
 
         // FILTER TYPEVAL
-        var $filter_typeval = repeater.createDropdownField({
+        var $typeval = repeater.createDropdownField({
           attr	: {
             'name'	: common_name + '[typeval]'
           },
@@ -115,7 +115,6 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         });
         if( filter['name'] != undefined ){ $meta_name.val( filter['name'] ); }
 
-
         // Container for holding the custom field's checkboxes
         var $fep_options = repeater.createField({
           element	: 'div',
@@ -137,36 +136,82 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           prepend	: $fep_options
         });
 
+        // CSS CLASS
+        var $css_class = repeater.createInputTextField({
+          label : 'CSS Class',
+          attr  : {
+            placeholder : "Type css class for this section",
+            name        : common_name + '[class]'
+          },
+          help    : 'Custom CSS class to uniqely identify this section',
+          append  : $content
+        });
+        if( filter['class'] != undefined ){ $css_class.val( filter['class'] ); }
+
+        var $html = repeater.createRichText({
+          attr:{
+            name  : common_name + '[html]',
+            id    : 'sections_html_' + repeater.count
+          },
+          html   : filter['html'] ? filter['html'] : '',
+          append : $content
+        });
+
+        var $nested_fields_container = repeater.createField({
+          element	: 'div',
+          attr	: {
+            'class'           : 'orbit-nested-fields',
+            'data-behaviour' 	: 'orbit-fields-repeater',
+            'data-atts'       : JSON.stringify( filter['fields'] ? filter['fields'] : [] )
+          },
+          append	: $content
+        });
+        $nested_fields_container.repeater_fields( common_name + '[fields]', atts );
+
 
         // OPTIONS OF FILTER TYPE BY VALUE ARE RESET BASED ON THE VALUE SELECTED IN FILTER TYPE
         function updateOptionsForFilterTypeValue(){
-          var type = $filter_type.find('select').val(),
+          var type = $type.find('select').val(),
             options = atts[ type + '_types' ];
 
             //HIDES FORM FIELD DROPDOWN WHEN THE TYPE IS POST
-            if( type=='post' ){ $form_field.hide(); }
+            if( type == 'post' || type == 'section' ){ $form_field.hide(); }
             else{ $form_field.show(); }
 
             //HIDES TYPE FIELD DROPDOWN WHEN THE TYPE IS CUSTOM FIELD
-            if( options == undefined ){ $filter_typeval.hide(); }
+            if( options == undefined ){ $typeval.hide(); }
             else{
-              $filter_typeval.setOptions( options );
-              $filter_typeval.show();
+              $typeval.setOptions( options );
+              $typeval.show();
             }
         }
 
         // SHOW OR HIDE OPTIONS FOR CUSTOM FIELDS ONLY WHEN THE MULTIPE FORM FIELDS ARE SELECTED
         function showOrHideFields(){
-          var type              = $filter_type.find('select').val(),
+          var type              = $type.find('select').val(),
             multiple_formfields = ['checkbox', 'dropdown', 'bt_dropdown_checkboxes', 'radio'],
             formfield           = $form_field.find('select').val();
+
+          // MAIN DROPDOWN SELECTION
+          if( type == 'section' ){
+            $html.show();
+            $nested_fields_container.show();
+            $css_class.show();
+            $required.hide();
+          }
+          else{
+            $html.hide();
+            $nested_fields_container.hide();
+            $css_class.hide();
+            $required.show();
+          }
 
           // SHOW OR HIDE OPTIONS
           if( ( jQuery.inArray( formfield, multiple_formfields ) != -1 ) && ( type == 'cf' ) ){ $fep_options.show(); }
           else{ $fep_options.hide(); }
 
           // SHOW OR HIDE META NAME FIELD
-          if( type=='cf' ){ $meta_name.show(); }
+          if( type == 'cf' ){ $meta_name.show(); }
           else{ $meta_name.hide(); }
         }
 
@@ -175,10 +220,10 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         showOrHideFields();
 
         // UPDATE ONLY WHEN THE TYPE IS CHANGED
-        $filter_type.on( 'change', function(){ updateOptionsForFilterTypeValue(); });
+        $type.on( 'change', function(){ updateOptionsForFilterTypeValue(); });
         updateOptionsForFilterTypeValue();
         // DEFAULT VALUE COMING FROM THE DB
-        if( filter['typeval'] ){ $filter_typeval.selectOption( filter['typeval'] ); }
+        if( filter['typeval'] ){ $typeval.selectOption( filter['typeval'] ); }
 
 
         //CREATE A HIDDEN FIELD

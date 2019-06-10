@@ -157,8 +157,9 @@ class ORBIT_FEP extends ORBIT_BASE{
 
       //ADD A NEW TYPE INTO THE TYPES ARRAY
       $new_type = array(
-        'post' => 'Post',
-        'cf'   => 'Custom Fields'
+        'post'    => 'Post',
+        'cf'      => 'Custom Fields',
+        'section' => 'Inline Section'
       );
       foreach( $new_type as $slug_type => $value_type ){ $form_atts['types'][$slug_type] = $value_type; }
       unset( $form_atts['types']['postdate'] );
@@ -172,13 +173,14 @@ class ORBIT_FEP extends ORBIT_BASE{
       );
 
       //NEW FORM FIELDS
-      $new_field = array(
-        'radio'     =>  'Radio (multiple)',
-        'text'      =>  'Text',
-        'textarea'  =>  'Textarea'
+      $new_form_fields = array(
+        'radio'         => 'Radio Buttons',
+        'text'          => 'Input Text (single)',
+        'multiple-text' => 'Multiple Input Text',
+        'textarea'      => 'Textarea'
       );
-      foreach( $new_field as $slug_type => $value_type ){
-        $form_atts['forms'][$slug_type] = $value_type;
+      foreach( $new_form_fields as $slug => $value ){
+        $form_atts['forms'][$slug] = $value;
       }
 
       // TRIGGER THE REPEATER FILTER BY DATA BEHAVIOUR ATTRIBUTE
@@ -344,6 +346,9 @@ class ORBIT_FEP extends ORBIT_BASE{
     wp_enqueue_script( 'orbit-fep-pages', plugin_dir_url( __FILE__ ).'assets/repeater-pages.js', array('jquery', 'orbit-repeater' ), time(), true );
     wp_enqueue_script( 'orbit-fields', plugin_dir_url( __FILE__ ).'assets/repeater-fields.js', array('jquery', 'orbit-repeater' ), time(), true );
     wp_enqueue_script( 'orbit-options-repeater', plugin_dir_url( __FILE__ ).'assets/repeater-options.js', array('jquery', 'orbit-repeater' ), time(), true );
+
+    // NEEDED FOR THE RICH TEXT EDITOR IN THE FIELDS REPEATER
+    wp_enqueue_editor();
   }
 
 }//class ends
