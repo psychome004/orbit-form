@@ -8,10 +8,11 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 
     var repeater = ORBIT_REPEATER( {
 			$el				      : $el,
-			btn_text		    : '+ Add Form Field',
+			btn_text		    : '+ Add Field',
 			close_btn_text	: 'Delete Form Field',
       list_id         : 'orbit-slide-repeater-list',
       list_item_id	  : 'orbit-slide-repeater',
+      list_item_types : atts['types'],
 			init	: function( repeater ){
 
         // ITERATE THROUGH EACH PAGES IN THE DB
@@ -34,17 +35,17 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 				* HIDDEN: page COUNT
 				*/
 
-        if( filter == undefined ){
-					filter = { label : '' };
+        if( filter == undefined || filter['type'] == undefined ){
+					filter = { type : 'tax' };
 				}
 
-        var common_name = parent_name + '[' + repeater.count + ']';
-
-				// CREATE COLLAPSIBLE ITEM - HEADER AND CONTENT
+        // CREATE COLLAPSIBLE ITEM - HEADER AND CONTENT
 				repeater.addCollapsibleItem( $list_item, $closeButton );
 
-				var $header = $list_item.find( '.list-header' );
-				var $content = $list_item.find( '.list-content' );
+				var $header           = $list_item.find( '.list-header' ),
+				    $content          = $list_item.find( '.list-content' ),
+            filter_type_text  = atts['types'][ filter['type'] ],
+            common_name       = parent_name + '[' + repeater.count + ']';
 
 				// TEXTAREA FOR FORM FIELD LABEL
 				var $textarea = repeater.createField({
@@ -53,12 +54,22 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 						'data-behaviour': 'space-autoresize',
 						'placeholder'	  : 'Type Form Field Name Here',
 						'name'			    : common_name + '[label]',
-						'value'			    : 'Form Field ' + ( repeater.count + 1 )
+						'value'			    : filter_type_text + ' ' + ( repeater.count + 1 )
 					},
 					append	: $header
 				});
 				//$textarea.space_autoresize();
 				if( filter['label'] ){ $textarea.val( filter['label'] ); }
+
+
+        var $bubble = repeater.createField({
+          element : 'div',
+          attr    : {
+            class : 'orbit-bubble'
+          },
+          html    : filter_type_text,
+          append  : $header
+        });
 
         var $type = createDropdownField( {
           slug    : 'type',
@@ -66,6 +77,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           append	: $content,
           label   : 'Choose Type Field'
         } );
+        $type.hide();
 
         // REQUIRED FIELD
         var required_flag = false;
