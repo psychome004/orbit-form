@@ -51,7 +51,7 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
 				var $textarea = repeater.createField({
 					element	: 'textarea',
 					attr	: {
-						'data-behaviour': 'space-autoresize',
+						//'data-behaviour': 'space-autoresize',
 						'placeholder'	  : 'Type Form Field Name Here',
 						'name'			    : common_name + '[label]',
 						'value'			    : filter_type_text + ' ' + ( repeater.count + 1 )
@@ -116,6 +116,30 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
         }
         else{
 
+          // GET TYPEVAL OPTIONS
+          var typeval_options;
+          switch( filter['type'] ){
+            case 'tax':
+              typeval_options = atts[ 'tax_types' ];
+              break;
+
+            case 'post':
+              typeval_options = atts[ 'post_types' ];
+              break;
+          }
+
+          // FILTER TYPEVAL - ONLY FOR TAXONOMY AND POST
+          if( typeval_options != undefined ){
+            var $typeval = createDropdownField( {
+              slug    : 'typeval',
+              options : typeval_options,
+              append	: $content,
+              label   : 'Choose Type Field'
+            } );
+            // DEFAULT VALUE COMING FROM THE DB
+            if( filter['typeval'] ){ $typeval.selectOption( filter['typeval'] ); }
+          }
+
           // REQUIRED FIELD
           var required_flag = false;
   				if( filter && filter['required'] && filter['required'] > 0 ){ required_flag = true; }
@@ -128,60 +152,62 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
             append :  $content
           });
 
-          // FILTER TYPEVAL
-          var $typeval = createDropdownField( {
-            slug    : 'typeval',
-            options : {},
-            append	: $content,
-            label   : 'Choose Type Field'
-          } );
+          if( filter['type'] == 'cf' || filter['type'] == 'tax' ){
+            // FORM FIELD TYPE
+            var $form_field = createDropdownField( {
+              slug    : 'form',
+              options : atts['forms'],
+              append	: $content,
+              label   : 'Choose Form Field'
+            } );
+          }
 
-          // FORM FIELD TYPE
-          var $form_field = createDropdownField( {
-            slug    : 'form',
-            options : atts['forms'],
-            append	: $content,
-            label   : 'Choose Form Field'
-          } );
+          // FIELDS SPECIC TO CUSTOM FIELDS
+          if( filter['type'] == 'cf' ){
 
-          // PLACEHOLDER FOR INPUT FIELDS / TEXTAREAS
-          var $placeholder = createTextField( {
-            label       : 'Placeholder',
-            slug        : 'placeholder',
-            placeholder : "Type something here",
-            help        : 'This option is only available for textarea and input text boxes',
-            append      : $content
-          } );
+            // CUSTOM META NAME - ONLY FOR CUSTOM FIELDS
+            var $meta_name = createTextField( {
+              label       : 'Metafield Name',
+              slug        : 'name',
+              placeholder : "Type name of the metafield",
+              help        : 'Only enter slugs as field names. For example: <b>contact-name</b>',
+              append      : $content
+            } );
 
-          // CUSTOM META NAME - ONLY FOR CUSTOM FIELDS
-          var $meta_name = createTextField( {
-            label       : 'Metafield Name',
-            slug        : 'name',
-            placeholder : "Type name of the metafield",
-            help        : 'Only enter slugs as field names. For example: <b>contact-name</b>',
-            append      : $content
-          } );
+            // PLACEHOLDER FOR INPUT FIELDS / TEXTAREAS
+            var $placeholder = createTextField( {
+              label       : 'Placeholder',
+              slug        : 'placeholder',
+              placeholder : "Type something here",
+              help        : 'This option is only available for textarea and input text boxes',
+              append      : $content
+            } );
 
-          // Container for holding the custom field's checkboxes
-          var $fep_options = repeater.createField({
-            element	: 'div',
-            attr	: {
-              'data-behaviour' 	: 'orbit-fep-options-repeater',
-              'data-atts'       : JSON.stringify( filter['options'] ? filter['options'] : [] )
-            },
-            append	: $content
-          });
-          $fep_options.repeater_options( common_name + '[options]' );
+            // Container for holding the custom field's checkboxes
+            var $fep_options = repeater.createField({
+              element	: 'div',
+              attr	: {
+                'data-behaviour' 	: 'orbit-fep-options-repeater',
+                'data-atts'       : JSON.stringify( filter['options'] ? filter['options'] : [] )
+              },
+              append	: $content
+            });
+            $fep_options.repeater_options( common_name + '[options]' );
 
-          // OPTIONS LABEL
-          var $options_list = repeater.createField({
-            element	: 'label',
-            attr	  : {
-              class: 'options-label'
-            },
-            html    : 'Options List',
-            prepend	: $fep_options
-          });
+            // OPTIONS LABEL
+            var $options_list = repeater.createField({
+              element	: 'label',
+              attr	  : {
+                class: 'options-label'
+              },
+              html    : 'Options List',
+              prepend	: $fep_options
+            });
+
+          }
+          // END OF FIELDS SPECIC TO CUSTOM FIELDS
+
+
         }
 
         // REUSABLE HELPER FUNCTION TO CREATE INPUT TEXT FIELD
@@ -214,58 +240,26 @@ jQuery.fn.repeater_fields = function( parent_name, atts ){
           return $field;
         }
 
-
-        // OPTIONS OF FILTER TYPE BY VALUE ARE RESET BASED ON THE VALUE SELECTED IN FILTER TYPE
-        function updateOptionsForFilterTypeValue(){
-          if( filter['type'] != 'section' ){
-            var type = $type.find('select').val(),
-              options = atts[ type + '_types' ];
-
-            //HIDES FORM FIELD DROPDOWN WHEN THE TYPE IS POST
-            if( type == 'post' || type == 'section' ){ $form_field.hide(); }
-            else{ $form_field.show(); }
-
-            //HIDES TYPE FIELD DROPDOWN WHEN THE TYPE IS CUSTOM FIELD
-            if( options == undefined ){ $typeval.hide(); }
-            else{
-              $typeval.setOptions( options );
-              $typeval.show();
-            }
-          }
-        }
-
         // SHOW OR HIDE OPTIONS FOR CUSTOM FIELDS ONLY WHEN THE MULTIPE FORM FIELDS ARE SELECTED
         function showOrHideFields(){
-
-          if( filter['type'] != 'section' ){
-            var type              = $type.find('select').val(),
-              multiple_formfields = ['checkbox', 'dropdown', 'bt_dropdown_checkboxes', 'radio'],
+          if( filter['type'] == 'cf' ){
+            var multiple_formfields = ['checkbox', 'dropdown', 'bt_dropdown_checkboxes', 'radio'],
               input_fields        = ['text', 'multiple-text', 'textarea'],
               formfield           = $form_field.find('select').val();
 
             // SHOW OR HIDE OPTIONS
-            if( ( jQuery.inArray( formfield, multiple_formfields ) != -1 ) && ( type == 'cf' ) ){ $fep_options.show(); }
+            if( jQuery.inArray( formfield, multiple_formfields ) != -1 ){ $fep_options.show(); }
             else{ $fep_options.hide(); }
 
-            // SHOW OR HIDE PLACEHOLDER
-            if( ( jQuery.inArray( formfield, input_fields ) != -1 ) && ( type == 'cf' ) ){ $placeholder.show(); }
+            // SHOW OR HIDE PLACEHOLDER - ONLY AVAILABLE FOR INPUT FIELDS AND WHEN THE TYPE IS CUSTOM FIELD
+            if( jQuery.inArray( formfield, input_fields ) != -1 ){ $placeholder.show(); }
             else{ $placeholder.hide(); }
-
-            // SHOW OR HIDE META NAME FIELD
-            if( type == 'cf' ){ $meta_name.show(); }
-            else{ $meta_name.hide(); }
           }
         }
 
         // CHECK WHENEVER THE FORM IS CHANGED
         $list_item.on( 'change', function(){ showOrHideFields(); });
         showOrHideFields();
-
-        // UPDATE ONLY WHEN THE TYPE IS CHANGED
-        updateOptionsForFilterTypeValue();
-
-        // DEFAULT VALUE COMING FROM THE DB
-        if( filter['typeval'] ){ $typeval.selectOption( filter['typeval'] ); }
 
         $closeButton.click( function( ev ){
 					ev.preventDefault();
