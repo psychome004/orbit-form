@@ -114,9 +114,6 @@ class ORBIT_FEP extends ORBIT_BASE{
     if( 'orbit-fep' != $post_type ) return $meta_box;
 
     // POST STATUS
-    $list_of_post_status = array();
-    $post_statuses = get_post_statuses();
-    foreach( $post_statuses as $post_status ){ array_push( $list_of_post_status, $post_status  ); }
 
     $meta_box['orbit-fep'] = array(
       array(
@@ -133,10 +130,10 @@ class ORBIT_FEP extends ORBIT_BASE{
             'text' 		=> 'Select Post Types',
             'options'	=> array()
           ),
-          'post_status' => array(
+          'poststatus' => array(
             'type' 		=> 'dropdown',
             'text' 		=> 'Select Post Status',
-            'options'	=> $list_of_post_status
+            'options'	=> get_post_statuses()
           ),
         )
       ),
@@ -261,7 +258,7 @@ class ORBIT_FEP extends ORBIT_BASE{
 
     $new_post = array(
       'post_type'   => get_post_meta( $atts['id'], 'posttypes', true ),
-      'post_status' => get_post_meta( $atts['id'], 'post_status', true )
+      'post_status' => get_post_meta( $atts['id'], 'poststatus', true )
     );
 
     $this->create( $fep_pages, $new_post );
